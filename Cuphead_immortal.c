@@ -20,7 +20,7 @@ void patch(HANDLE hProc, void* address) {
 	
 	}
 	else {
-		printf("[!] Fail to change mem attributes: %lu\n");
+		printf("[!] Fail to change mem attributes: %lu\n",GetLastError());
 	}
 }
 
@@ -80,4 +80,5 @@ int main(void) {
 	}
 
 	return 0;
+
 }
