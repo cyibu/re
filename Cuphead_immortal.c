@@ -1,8 +1,9 @@
-﻿#include <stdio.h>
+#include <stdio.h>
 #include <Windows.h>
-#include <tlhelp32.h>
 
-void patch(HANDLE hProc, void* address) {
+//directed by gemini ai
+
+static void patch(HANDLE hProc, void* address) {
 	unsigned char nopPatch[] = {0x90, 0x90};
 	DWORD oldProtected;
 
@@ -24,13 +25,19 @@ void patch(HANDLE hProc, void* address) {
 	}
 }
 
-void ScanProc(HANDLE hProc, unsigned char* pattern, size_t patternSize) {
+static void scanProc(HANDLE hProc, unsigned char* pattern, size_t patternSize) {
 	MEMORY_BASIC_INFORMATION mbi;
 	unsigned char* addr = NULL;
 
 	while (VirtualQueryEx(hProc, addr, &mbi, sizeof(mbi))) {
 		if (mbi.State == MEM_COMMIT && mbi.Protect != PAGE_NOACCESS && !(mbi.Protect & PAGE_GUARD)) {
 			unsigned char* buffer = malloc(mbi.RegionSize);
+
+			if (buffer == NULL) {
+				addr = (unsigned char*)mbi.BaseAddress + mbi.RegionSize;
+				continue;
+			}
+
 			SIZE_T bytesRead;
 			if (ReadProcessMemory(hProc, mbi.BaseAddress, buffer, mbi.RegionSize, &bytesRead)) {
 				for (size_t i = 0; i <= bytesRead - patternSize; i++) {
@@ -72,7 +79,7 @@ int main(void) {
 				return 1;
 			}
 			printf("[*] Scanning pid: %lu\n", pid);
-			ScanProc(hProcess, pattern, patternSize);
+			scanProc(hProcess, pattern, patternSize);
 		}
 		else {
 			printf("[!] %s process not found, run it first.", target);
@@ -80,5 +87,4 @@ int main(void) {
 	}
 
 	return 0;
-
 }
